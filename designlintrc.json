@@ -1,0 +1,18 @@
+{
+    "source": {
+        "type": "tokensJson",
+        "path": "./tokens.json"
+    },
+    "rules": {
+        "naming-convention": {
+            "severity": "error",
+            "pattern": "^([a-z]+)(\\.[a-z0-9\\-]+)*$"
+        }
+    },
+    "report": {
+        "format": [
+            "console"
+        ],
+        "outputPath": "./reports"
+    }
+}
