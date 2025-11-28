@@ -2,15 +2,21 @@
   "name": "design-system-linter",
   "version": "0.1.0",
   "description": "A linter for Design System tokens exported from Figma",
+  "private": true,
+  "workspaces": [
+    "example",
+    "packages/design-ai-linter"
+  ],
   "bin": {
-    "dslint": "dist/cli/cli.js"
+    "dslint": "packages/design-ai-linter/dist/cli/cli.js"
   },
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/cli/cli.js",
-    "dev": "ts-node src/cli/cli.ts",
-    "lint": "eslint src --ext .ts",
-    "test": "jest"
+    "build": "pnpm --filter design-ai-linter build",
+    "start": "pnpm --filter design-ai-linter start",
+    "dev": "pnpm --filter design-ai-linter dev",
+    "lint": "eslint packages/design-ai-linter/src packages/design-ai-linter/test --ext .ts",
+    "test": "pnpm --filter design-ai-linter test",
+    "test:run": "pnpm --filter design-ai-linter test:run"
   },
   "keywords": [
     "design-system",
@@ -20,19 +26,9 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "chalk": "^4.1.2",
-    "commander": "^10.0.0",
-    "dotenv": "^17.2.3",
-    "openai": "^6.9.1",
-    "zod": "^4.1.12"
-  },
   "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@types/node": "^18.15.11",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.0"
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0"
   }
 }

@@ -1,0 +1,42 @@
+{
+  "name": "design-ai-linter",
+  "version": "0.1.0",
+  "description": "A linter for Design System tokens exported from Figma",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "dslint": "dist/cli/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli/cli.js",
+    "dev": "ts-node src/cli/cli.ts",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "keywords": [
+    "design-system",
+    "linter",
+    "figma",
+    "tokens"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "chalk": "^4.1.2",
+    "commander": "^10.0.0",
+    "dotenv": "^17.2.3",
+    "openai": "^6.9.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "@vitest/ui": "^1.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
+

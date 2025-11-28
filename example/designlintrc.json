@@ -1,0 +1,21 @@
+{
+  "source": {
+    "path": "./tokens.json"
+  },
+  "files": "src/**/*.{tsx,ts,css}",
+  "rules": {
+    "naming-convention": {
+      "severity": "error",
+      "pattern": "^([a-z]+\\.)+[a-z0-9\\-]+$"
+    },
+    "raw-color": {
+      "severity": "warn",
+      "enabled": true
+    },
+    "raw-pixel": {
+      "severity": "warn",
+      "enabled": true
+    }
+  }
+}
+

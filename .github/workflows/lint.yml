@@ -1,4 +1,4 @@
-name: design-lint
+name: lint
 on: [pull_request]
 
 jobs:
@@ -7,26 +7,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'pnpm'
           
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
         
-      - name: Build
-        run: npm run build
-        
-      # Optional: Sync tokens if FIGMA keys are present
-      # - name: Sync Tokens
-      #   if: env.FIGMA_FILE_KEY != ''
-      #   run: node dist/cli/cli.js sync --output ./tokens.json
-      #   env:
-      #     FIGMA_FILE_KEY: ${{ secrets.FIGMA_FILE_KEY }}
-      #     FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_ACCESS_TOKEN }}
-
-      - name: Run DSLint
-        run: node dist/cli/cli.js lint --config ./designlintrc.json --source ./tokens.json
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Run ESLint
+        run: pnpm lint
