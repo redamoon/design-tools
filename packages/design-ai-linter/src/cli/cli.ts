@@ -2,7 +2,6 @@
 import { Command } from 'commander';
 import { loadTokensFromJson } from '../adapters/tokensJsonAdapter';
 import { loadCodeFiles } from '../adapters/codeFileAdapter';
-import { ruleNamingConvention } from '../rules/naming-convention';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
@@ -192,7 +191,7 @@ program
                     if (d.fixedCode) {
                         console.log(`    修正コード:`);
                         const fixedLines = d.fixedCode.split('\n');
-                        fixedLines.forEach((line, idx) => {
+                        fixedLines.forEach((line, _idx) => {
                             if (line.trim()) {
                                 console.log(`      ${line}`);
                             }

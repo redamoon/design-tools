@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { loadTokensFromJson } from '../../src/adapters/tokensJsonAdapter';
 import fs from 'fs/promises';
-import path from 'path';
 
 vi.mock('fs/promises');
 

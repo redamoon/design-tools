@@ -4,7 +4,10 @@
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
-    "project": "./packages/design-ai-linter/tsconfig.json"
+    "project": [
+      "./packages/design-ai-linter/tsconfig.json",
+      "./packages/design-ai-linter/tsconfig.test.json"
+    ]
   },
   "plugins": ["@typescript-eslint"],
   "extends": [

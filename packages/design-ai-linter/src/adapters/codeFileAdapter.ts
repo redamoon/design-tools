@@ -25,7 +25,6 @@ export async function loadCodeFiles(
     
     // Extract directory pattern (everything before the last /)
     const dirPattern = parts.slice(0, -1).join('/');
-    const filePattern = parts[parts.length - 1];
     
     // Resolve base directory
     const resolvedBaseDir = path.resolve(baseDir);
