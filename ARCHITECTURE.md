@@ -7,16 +7,16 @@
 
 ```mermaid
 flowchart LR
-    A[Figma Design<br>• Variables<br>• Components] 
-        --> B[Token Sync Layer<br>Token Extractor]
-    B --> C[Token Registry(JSON)]
-    C --> D[Static Lint Layer<br>ESLint/Tailwind/Stylelint]
-    D --> E[AI Candidate Selector<br>Extract Deviations]
+    A["Figma Design<br/>Variables & Components"] 
+        --> B["Token Sync Layer<br/>Token Extractor"]
+    B --> C["Token Registry JSON"]
+    C --> D["Static Lint Layer<br/>ESLint/Tailwind/Stylelint"]
+    D --> E["AI Candidate Selector<br/>Extract Deviations"]
 
-    E --> F[AI Lint Engine<br>LLM(Claude/GPT/Gemini)]
-    F --> G[Lint Report<br>• Reason<br>• Token Proposal<br>• Fixed Code]
+    E --> F["AI Lint Engine<br/>LLM Claude/GPT/Gemini"]
+    F --> G["Lint Report<br/>Reason, Token Proposal, Fixed Code"]
 
-    G --> H[Output<br>• CLI<br>• GitHub PR Comment<br>• HTML Report]
+    G --> H["Output<br/>CLI, GitHub PR Comment, HTML Report"]
 ```
 
 ## ② Data Flow: Static Lint → AI Lint
@@ -79,12 +79,12 @@ classDiagram
 
 ```mermaid
 flowchart TD
-    PR[Pull Request Open] --> CI[GitHub Actions]
+    PR["Pull Request Open"] --> CI["GitHub Actions"]
 
-    CI --> SYNC[Sync Tokens<br>Figma API]
-    SYNC --> STATIC[Static Lint]
-    STATIC --> AI_LINT[AI Lint Engine]
-    AI_LINT --> COMMENT[PR Comment Bot]
+    CI --> SYNC["Sync Tokens<br/>Figma API"]
+    SYNC --> STATIC["Static Lint"]
+    STATIC --> AI_LINT["AI Lint Engine"]
+    AI_LINT --> COMMENT["PR Comment Bot"]
 
     COMMENT --> PR
 ```
