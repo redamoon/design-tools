@@ -1,5 +1,5 @@
 {
-  "name": "design-system-linter",
+  "name": "design-ai-linter",
   "version": "0.1.0",
   "description": "A linter for Design System tokens exported from Figma",
   "private": true,

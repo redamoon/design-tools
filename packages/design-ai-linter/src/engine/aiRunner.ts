@@ -84,7 +84,7 @@ export async function runAIRules(
                         const response = await openaiClient.chat.completions.create({
                             model: modelName,
                             messages: [
-                                { role: "system", content: "You are an expert Design System Linter. Output JSON only." },
+                                { role: "system", content: "You are an expert Design AI Linter. Output JSON only." },
                                 { role: "user", content: prompt }
                             ],
                             response_format: { type: "json_object" }
@@ -142,7 +142,7 @@ export async function runAIRules(
                         const response = await geminiClient.models.generateContent({
                             model: modelName,
                             contents: [
-                                "You are an expert Design System Linter. Output JSON only. Do not use markdown code blocks.",
+                                "You are an expert Design AI Linter. Output JSON only. Do not use markdown code blocks.",
                                 prompt
                             ]
                         });

@@ -1,4 +1,4 @@
-# Design System Linter
+# Design AI Linter
 
 A CLI tool to lint Design System tokens exported from Figma (e.g., via Figma Tokens / Token Studio). Combines static analysis with AI-powered semantic checks.
 

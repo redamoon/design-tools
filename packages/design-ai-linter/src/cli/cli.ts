@@ -60,7 +60,7 @@ const program = new Command();
 
 program
     .name('dslint')
-    .description('Design System Linter for Figma Tokens')
+    .description('Design AI Linter for Figma Tokens')
     .version('0.1.0');
 
 program

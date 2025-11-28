@@ -1,4 +1,4 @@
-# AI Design System Linter - Walkthrough & Handover
+# Design AI Linter - Walkthrough & Handover
 
 > **Note**: This document is intended for AI agents and developers who need detailed information about the project architecture, setup, and implementation. For quick start instructions, see [README.md](./README.md).
 

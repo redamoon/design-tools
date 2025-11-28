@@ -1,7 +1,7 @@
-# AI Design System Linter - Architecture
+# Design AI Linter - Architecture
 
 > [!IMPORTANT]
-> This document outlines the system architecture for the AI-powered Design System Linter, combining static analysis with AI-driven intent verification.
+> This document outlines the system architecture for the Design AI Linter, combining static analysis with AI-driven intent verification.
 
 ## ① Overall Architecture
 
