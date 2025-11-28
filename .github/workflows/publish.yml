@@ -1,0 +1,80 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@design-tools'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Update package.json version
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          node -e "
+            const fs = require('fs');
+            
+            // Update design-ai-linter package
+            const pkg = JSON.parse(fs.readFileSync('packages/design-ai-linter/package.json', 'utf8'));
+            pkg.version = '${{ steps.get_version.outputs.version }}';
+            fs.writeFileSync('packages/design-ai-linter/package.json', JSON.stringify(pkg, null, 2));
+            
+            console.log('Updated package to version:', '${{ steps.get_version.outputs.version }}');
+          "
+
+      - name: Build design-ai-linter
+        run: pnpm --filter design-ai-linter build
+
+      - name: Publish @design-tools/design-ai-linter to npm
+        working-directory: packages/design-ai-linter
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          echo "@design-tools:registry=https://registry.npmjs.org/" >> .npmrc
+          npm whoami --registry=https://registry.npmjs.org/
+          npm config set @design-tools:registry https://registry.npmjs.org/
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
