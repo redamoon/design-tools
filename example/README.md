@@ -8,6 +8,23 @@
 pnpm install
 ```
 
+## 環境変数の設定
+
+**重要**: AIルールを使用する場合は、**プロジェクトルート**（monorepoのルートディレクトリ、`example/`の親ディレクトリ）に`.env`ファイルを作成し、以下の環境変数を設定してください：
+
+```bash
+# プロジェクトルート（design-ai-linter/）に .env ファイルを作成
+OPENAI_API_KEY=sk-...
+# または
+GEMINI_API_KEY=AIza...
+
+# Figma同期を使用する場合（オプション）
+FIGMA_FILE_KEY=...
+FIGMA_ACCESS_TOKEN=...
+```
+
+`example/`ディレクトリから実行する場合でも、プロジェクトルートの`.env`ファイルが自動的に読み込まれます。`cli.ts`の`findProjectRoot`関数がmonorepo構造を認識し、ルートディレクトリを検出します。
+
 ## 開発サーバーの起動
 
 ```bash
@@ -20,24 +37,19 @@ pnpm dev
 pnpm lint
 ```
 
-**注意**: AIルールを使用する場合は、プロジェクトルート（`../`）に`.env`ファイルを作成し、以下の環境変数を設定してください：
+このコマンドは、`src/`ディレクトリ内のコードファイルを解析し、raw color値やraw pixel値を検出して、適切なデザイントークンの使用を提案します。
+
+## Tokenの取得
+
+実際の利用では、プロジェクトルートからCLIコマンドでFigmaからtokenを取得できます：
 
 ```bash
-# プロジェクトルートに .env ファイルを作成
-OPENAI_API_KEY=sk-...
-# または
-GEMINI_API_KEY=...
-```
+# プロジェクトルートから実行
+cd ..
+pnpm start sync --key <FIGMA_FILE_KEY> --token <FIGMA_ACCESS_TOKEN> --output example/tokens.json
 
-exampleディレクトリから実行する場合でも、プロジェクトルートの`.env`ファイルが自動的に読み込まれます。
-
-## Tokenの配布
-
-実際の利用では、CLIコマンドでFigmaからtokenを取得して配布します：
-
-```bash
-# Figmaからtokenを同期
-dslint sync --key <FIGMA_FILE_KEY> --token <FIGMA_ACCESS_TOKEN> --output tokens.json
+# または環境変数が設定されている場合
+pnpm start sync --output example/tokens.json
 ```
 
 ## サンプルコンポーネント

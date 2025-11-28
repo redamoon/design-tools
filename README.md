@@ -1,65 +1,65 @@
 # Design AI Linter
 
-A CLI tool to lint Design System tokens exported from Figma (e.g., via Figma Tokens / Token Studio). Combines static analysis with AI-powered semantic checks.
+FigmaからエクスポートされたDesign Systemトークン（例：Figma Tokens / Token Studio経由）をリントするCLIツールです。静的解析とAIによる意味解析を組み合わせています。
 
-## Features
+## 機能
 
-- **Token Normalization**: Reads `tokens.json` and normalizes them for analysis.
-- **Static Rules**: Checks for naming conventions, raw color/pixel values, and duplicates.
-- **AI Rules**: Uses LLMs (OpenAI/Gemini) to check semantic consistency, spacing alignment, and design complexity.
-- **CLI**: Run locally or in CI/CD.
-- **Code Analysis**: Analyzes code files to detect raw values and suggest design tokens.
+- **トークン正規化**: `tokens.json`を読み込み、解析用に正規化します。
+- **静的ルール**: 命名規則、生のカラー/ピクセル値、重複をチェックします。
+- **AIルール**: LLM（OpenAI/Gemini）を使用して、意味的な一貫性、スペーシングの整合性、デザインの複雑さをチェックします。
+- **CLI**: ローカルまたはCI/CDで実行可能です。
+- **コード解析**: コードファイルを解析して生の値を検出し、デザイントークンを提案します。
 
-## Quick Start
+## クイックスタート
 
-1.  **Install dependencies**:
+1.  **依存関係のインストール**:
     ```bash
     pnpm install
     ```
 
-2.  **Environment Setup** (Optional, for AI features):
-    Create a `.env` file in the project root:
+2.  **環境変数の設定** (AI機能を使用する場合):
+    プロジェクトルートに`.env`ファイルを作成:
     ```bash
     OPENAI_API_KEY=sk-...
-    # OR
+    # または
     GEMINI_API_KEY=AIza...
     ```
 
-3.  **Run the linter**:
+3.  **リントの実行**:
     ```bash
-    # Development mode
+    # 開発モード
     pnpm dev lint
-    # Or build and run
+    # またはビルドして実行
     pnpm build
     pnpm start lint
     ```
 
-4.  **Sync tokens from Figma** (Optional):
+4.  **Figmaからトークンを同期** (オプション):
     ```bash
     pnpm start sync --key <file_key> --token <access_token>
     ```
 
-5.  **Run tests**:
+5.  **テストの実行**:
     ```bash
     pnpm test
     ```
 
-6.  **Configuration**:
-    Edit `designlintrc.json` to configure rules.
+6.  **設定**:
+    `designlintrc.json`を編集してルールを設定します。
 
-## Project Structure
+## プロジェクト構造
 
-This is a monorepo managed with pnpm workspaces:
+このプロジェクトはpnpm workspacesで管理されるmonorepoです:
 
-- `packages/design-ai-linter/`: Main linter package
-  - `src/adapters`: Logic to read tokens from files/APIs.
-  - `src/rules`: Linter rules (static and AI-powered).
-  - `src/cli`: CLI entry point.
-  - `src/engine`: Static runner, AI runner, and candidate selector.
-- `example/`: Example React application demonstrating linter usage
+- `packages/design-ai-linter/`: メインのリントパッケージ
+  - `src/adapters`: ファイル/APIからトークンを読み込むロジック
+  - `src/rules`: リントルール（静的ルールとAIルール）
+  - `src/cli`: CLIエントリーポイント
+  - `src/engine`: 静的ランナー、AIランナー、候補セレクター
+- `example/`: リントの使用例を示すReactアプリケーション
 
-## Adding Rules
+## ルールの追加
 
-Create a new file in `packages/design-ai-linter/src/rules/` and export a function that takes `Token[]` and returns `Diagnostic[]`. Then register it in `packages/design-ai-linter/src/cli/cli.ts`.
+`packages/design-ai-linter/src/rules/`に新しいファイルを作成し、`Token[]`を受け取り`Diagnostic[]`を返す関数をエクスポートします。その後、`packages/design-ai-linter/src/cli/cli.ts`に登録します。
 
-For detailed architecture and AI implementation details, see [WALKTHROUGH.md](./WALKTHROUGH.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
+詳細なアーキテクチャとAI実装の詳細については、[WALKTHROUGH.md](./WALKTHROUGH.md)と[ARCHITECTURE.md](./ARCHITECTURE.md)を参照してください。
