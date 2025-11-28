@@ -68,13 +68,11 @@ jobs:
         run: pnpm --filter design-ai-linter build
 
       - name: Publish @design-tools/design-ai-linter to npm
-        working-directory: packages/design-ai-linter
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
           echo "@design-tools:registry=https://registry.npmjs.org/" >> .npmrc
-          npm whoami --registry=https://registry.npmjs.org/
-          npm config set @design-tools:registry https://registry.npmjs.org/
-          npm publish --access public
+          pnpm config set registry https://registry.npmjs.org/
+          pnpm --filter @design-tools/design-ai-linter publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
