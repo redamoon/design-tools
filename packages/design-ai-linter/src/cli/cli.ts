@@ -70,6 +70,8 @@ program
     .option('-f, --files <glob>', 'code files to analyze (e.g., "src/**/*.{tsx,css}")')
     .option('--json <path>', 'output JSON report to file')
     .option('--pr-comment', 'output PR comment format')
+    .option('--prompt-file <path>', 'custom prompt file to execute')
+    .option('--prompt-output-json', 'output prompt response as JSON')
     .action(async (opts) => {
         try {
             // Load config
@@ -94,6 +96,52 @@ program
 
             const tokens = await loadTokensFromJson(path.resolve(process.cwd(), sourcePath));
             console.log(`✅ ${tokens.length}個のトークンが見つかりました。`);
+
+            // Handle custom prompt file if specified
+            if (opts.promptFile) {
+                try {
+                    const promptFilePath = path.resolve(process.cwd(), opts.promptFile);
+                    console.log(`📝 プロンプトファイルを読み込み中: ${promptFilePath}`);
+                    const promptText = await fs.readFile(promptFilePath, 'utf-8');
+                    
+                    const { runCustomPrompt } = await import('../engine/aiRunner');
+                    
+                    // Determine provider
+                    const hasOpenAI = !!process.env.OPENAI_API_KEY;
+                    const hasGemini = !!process.env.GEMINI_API_KEY;
+                    const provider = hasOpenAI ? 'openai' : (hasGemini ? 'gemini' : 'openai');
+                    
+                    console.log('🤖 カスタムプロンプトを実行中...');
+                    const response = await runCustomPrompt(
+                        promptText,
+                        tokens,
+                        undefined,
+                        provider,
+                        opts.promptOutputJson || false
+                    );
+                    
+                    if (opts.promptOutputJson) {
+                        // Try to parse as JSON and pretty print
+                        try {
+                            const jsonResponse = JSON.parse(response);
+                            console.log('\n' + JSON.stringify(jsonResponse, null, 2));
+                        } catch {
+                            // If not valid JSON, output as-is
+                            console.log('\n' + response);
+                        }
+                    } else {
+                        console.log('\n' + response);
+                    }
+                    
+                    process.exit(0);
+                } catch (error: any) {
+                    console.error('❌ カスタムプロンプトの実行中にエラーが発生しました:', error.message);
+                    if (error.stack) {
+                        console.error('   スタックトレース:', error.stack);
+                    }
+                    process.exit(1);
+                }
+            }
 
             // Load code files if --files option is provided
             let codeFiles;

@@ -7,6 +7,7 @@ FigmaからエクスポートされたDesign Systemトークン（例：Figma To
 - **トークン正規化**: `tokens.json`を読み込み、解析用に正規化します。
 - **静的ルール**: 命名規則、生のカラー/ピクセル値、重複をチェックします。
 - **AIルール**: LLM（OpenAI/Gemini）を使用して、意味的な一貫性、スペーシングの整合性、デザインの複雑さをチェックします。
+- **カスタムプロンプト**: 任意のプロンプトファイルを読み込んでAIに送信し、トークン情報をコンテキストとして含めて実行できます。
 - **CLI**: ローカルまたはCI/CDで実行可能です。
 - **コード解析**: コードファイルを解析して生の値を検出し、デザイントークンを提案します。
 
@@ -39,12 +40,26 @@ FigmaからエクスポートされたDesign Systemトークン（例：Figma To
     pnpm start sync --key <file_key> --token <access_token>
     ```
 
-5.  **テストの実行**:
+5.  **カスタムプロンプトの実行** (オプション):
+    ```bash
+    # 基本的な使用方法
+    pnpm start lint --prompt-file prompt.txt
+
+    # JSON形式で出力
+    pnpm start lint --prompt-file prompt.txt --prompt-output-json
+
+    # カスタムトークンファイルを指定
+    pnpm start lint --source ./custom-tokens.json --prompt-file prompt.txt
+    ```
+    
+    プロンプトファイル内で`{{TOKENS}}`プレースホルダーを使用すると、その位置にトークン情報が挿入されます。使用しない場合は、プロンプトの末尾に自動的に追加されます。
+
+6.  **テストの実行**:
     ```bash
     pnpm test
     ```
 
-6.  **設定**:
+7.  **設定**:
     `designlintrc.json`を編集してルールを設定します。
 
 ## プロジェクト構造

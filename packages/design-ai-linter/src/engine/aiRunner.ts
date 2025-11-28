@@ -232,3 +232,191 @@ export async function runAIRules(
 
     return diagnostics;
 }
+
+export async function runCustomPrompt(
+    promptText: string,
+    tokens: Token[],
+    apiKey?: string,
+    provider: AIProvider = 'openai',
+    outputJson: boolean = false
+): Promise<string> {
+    // Determine provider and key
+    let activeProvider = provider;
+    let finalApiKey = apiKey;
+
+    if (!finalApiKey) {
+        if (process.env.OPENAI_API_KEY) {
+            activeProvider = 'openai';
+            finalApiKey = process.env.OPENAI_API_KEY;
+        } else if (process.env.GEMINI_API_KEY) {
+            activeProvider = 'gemini';
+            finalApiKey = process.env.GEMINI_API_KEY;
+        }
+    }
+
+    if (!finalApiKey) {
+        throw new Error("OPENAI_API_KEYまたはGEMINI_API_KEYが設定されていません。");
+    }
+
+    console.log(`🤖 AIプロバイダーを使用: ${activeProvider.toUpperCase()}`);
+
+    // Prepare tokens context
+    const tokensContext = JSON.stringify(
+        tokens.map(t => ({ name: t.name, type: t.type, value: t.rawValue })),
+        null,
+        2
+    );
+
+    // Process prompt: replace {{TOKENS}} placeholder or append tokens info
+    let finalPrompt = promptText;
+    if (promptText.includes('{{TOKENS}}')) {
+        finalPrompt = promptText.replace('{{TOKENS}}', tokensContext);
+    } else {
+        finalPrompt = `${promptText}\n\nTokens:\n${tokensContext}`;
+    }
+
+    // Initialize Clients
+    let openaiClient: OpenAI | null = null;
+    let geminiClient: GoogleGenAI | null = null;
+
+    if (activeProvider === 'openai') {
+        openaiClient = new OpenAI({ apiKey: finalApiKey });
+    } else {
+        geminiClient = new GoogleGenAI({ apiKey: finalApiKey });
+    }
+
+    let responseContent: string = '';
+
+    if (activeProvider === 'openai' && openaiClient) {
+        // Try different OpenAI models in order of preference
+        const modelNames = ["gpt-4o", "gpt-4-turbo", "gpt-4-turbo-preview", "gpt-3.5-turbo"];
+        let modelSuccess = false;
+
+        for (const modelName of modelNames) {
+            try {
+                const systemMessage = outputJson
+                    ? "You are an expert Design AI Linter. Output JSON only."
+                    : "You are an expert Design AI Linter. Provide helpful and detailed responses.";
+
+                const response = await openaiClient!.chat.completions.create({
+                    model: modelName,
+                    messages: [
+                        { role: "system", content: systemMessage },
+                        { role: "user", content: finalPrompt }
+                    ],
+                    ...(outputJson ? { response_format: { type: "json_object" } } : {})
+                });
+                const content = response.choices[0].message.content;
+                if (!content) {
+                    console.log(`⚠️  モデル ${modelName} が空のレスポンスを返しました。次のモデルを試します...`);
+                    continue;
+                }
+                responseContent = content;
+                modelSuccess = true;
+                console.log(`✅ OpenAIモデル ${modelName} を使用しました`);
+                break; // Success, exit loop
+            } catch (error: any) {
+                // Handle different error formats
+                let errorMsg = '';
+                if (error?.error?.message) {
+                    errorMsg = error.error.message;
+                } else if (error?.message) {
+                    errorMsg = error.message;
+                } else if (typeof error === 'string') {
+                    errorMsg = error;
+                } else {
+                    errorMsg = JSON.stringify(error);
+                }
+
+                // If it's a model not found error, try next model
+                if (errorMsg.includes('not found') ||
+                    errorMsg.includes('not available') ||
+                    errorMsg.includes('invalid_model') ||
+                    errorMsg.includes('model_not_found')) {
+                    console.log(`⚠️  モデル ${modelName} が利用できません。次のモデルを試します...`);
+                    continue;
+                } else {
+                    // For other errors, log and try next model
+                    console.log(`⚠️  モデル ${modelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                    continue;
+                }
+            }
+        }
+
+        if (!modelSuccess) {
+            throw new Error('すべてのOpenAIモデルの試行に失敗しました');
+        }
+
+    } else if (activeProvider === 'gemini' && geminiClient) {
+        // Try different Gemini models in order of preference
+        const modelNames = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
+        let lastError: any = null;
+        let modelSuccess = false;
+
+        for (const modelName of modelNames) {
+            try {
+                const systemMessage = outputJson
+                    ? "You are an expert Design AI Linter. Output JSON only. Do not use markdown code blocks."
+                    : "You are an expert Design AI Linter. Provide helpful and detailed responses.";
+
+                const response = await geminiClient!.models.generateContent({
+                    model: modelName,
+                    contents: [
+                        systemMessage,
+                        finalPrompt
+                    ]
+                });
+                let text = response.text || '';
+
+                // Clean up markdown code blocks if present (Gemini sometimes adds them)
+                if (outputJson) {
+                    text = text.replace(/^```json\n/, '').replace(/\n```$/, '');
+                } else {
+                    text = text.replace(/^```\w*\n/, '').replace(/\n```$/, '');
+                }
+
+                if (!text) {
+                    throw new Error('Empty response from Gemini API');
+                }
+                responseContent = text;
+                modelSuccess = true;
+                console.log(`✅ モデル ${modelName} を使用しました`);
+                break; // Success, exit loop
+            } catch (error: any) {
+                lastError = error;
+                // Handle different error formats
+                let errorMsg = '';
+                if (error?.error?.message) {
+                    errorMsg = error.error.message;
+                } else if (error?.message) {
+                    errorMsg = error.message;
+                } else if (typeof error === 'string') {
+                    errorMsg = error;
+                } else {
+                    errorMsg = JSON.stringify(error);
+                }
+
+                // If it's a 404 or model not found error, try next model
+                if (errorMsg.includes('404') ||
+                    errorMsg.includes('not found') ||
+                    errorMsg.includes('not available') ||
+                    errorMsg.includes('not supported') ||
+                    errorMsg.includes('NOT_FOUND')) {
+                    console.log(`⚠️  モデル ${modelName} が利用できません。次のモデルを試します...`);
+                    continue;
+                } else {
+                    // For other errors, log and try next model (don't throw immediately)
+                    console.log(`⚠️  モデル ${modelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                    continue;
+                }
+            }
+        }
+
+        // If all models failed, throw the last error
+        if (!modelSuccess && lastError) {
+            throw lastError;
+        }
+    }
+
+    return responseContent;
+}
