@@ -32,7 +32,8 @@ export async function runAIRules(
     rules: AIRule[],
     apiKey?: string,
     provider: AIProvider = 'openai',
-    codeFiles?: import('../types').CodeFile[]
+    codeFiles?: import('../types').CodeFile[],
+    modelName?: string
 ): Promise<Diagnostic[]> {
     const diagnostics: Diagnostic[] = [];
     const context: LintContext = { tokens, codeFiles };
@@ -75,14 +76,15 @@ export async function runAIRules(
             const prompt = rule.prompt(context);
 
             if (activeProvider === 'openai' && openaiClient) {
-                // Try different OpenAI models in order of preference
-                const modelNames = ["gpt-4o", "gpt-4-turbo", "gpt-4-turbo-preview", "gpt-3.5-turbo"];
+                // Use specified model or try different OpenAI models in order of preference
+                const defaultModelNames = ["gpt-4o", "gpt-4-turbo", "gpt-4-turbo-preview", "gpt-3.5-turbo"];
+                const modelNames = modelName ? [modelName] : defaultModelNames;
                 let modelSuccess = false;
                 
-                for (const modelName of modelNames) {
+                for (const currentModelName of modelNames) {
                     try {
                         const response = await openaiClient.chat.completions.create({
-                            model: modelName,
+                            model: currentModelName,
                             messages: [
                                 { role: "system", content: "You are an expert Design AI Linter. Output JSON only." },
                                 { role: "user", content: prompt }
@@ -91,56 +93,85 @@ export async function runAIRules(
                         });
                         const content = response.choices[0].message.content;
                         if (!content) {
-                            console.log(`⚠️  モデル ${modelName} が空のレスポンスを返しました。次のモデルを試します...`);
+                            if (modelName) {
+                                throw new Error(`モデル ${currentModelName} が空のレスポンスを返しました`);
+                            }
+                            console.log(`⚠️  モデル ${currentModelName} が空のレスポンスを返しました。次のモデルを試します...`);
                             continue;
                         }
                         jsonContent = JSON.parse(content);
                         modelSuccess = true;
-                        console.log(`✅ OpenAIモデル ${modelName} を使用しました`);
+                        console.log(`✅ OpenAIモデル ${currentModelName} を使用しました`);
                         break; // Success, exit loop
                     } catch (error: any) {
                         // Handle different error formats
                         let errorMsg = '';
+                        let errorCode = '';
                         if (error?.error?.message) {
                             errorMsg = error.error.message;
+                            errorCode = error.error.code?.toString() || '';
+                        } else if (error?.status) {
+                            errorCode = error.status.toString();
+                            errorMsg = error.message || '';
                         } else if (error?.message) {
                             errorMsg = error.message;
+                            errorCode = error.code?.toString() || '';
                         } else if (typeof error === 'string') {
                             errorMsg = error;
                         } else {
                             errorMsg = JSON.stringify(error);
                         }
                         
-                        // If it's a model not found error, try next model
-                        if (errorMsg.includes('not found') || 
-                            errorMsg.includes('not available') ||
-                            errorMsg.includes('invalid_model') ||
-                            errorMsg.includes('model_not_found')) {
-                            console.log(`⚠️  モデル ${modelName} が利用できません。次のモデルを試します...`);
-                            continue;
-                        } else {
-                            // For other errors, log and try next model
-                            console.log(`⚠️  モデル ${modelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                        // Check for quota/rate limit errors (429, 403, etc.) - always try next model
+                        const isQuotaError = errorCode === '429' || 
+                                            errorMsg.includes('429') ||
+                                            errorMsg.includes('quota') ||
+                                            errorMsg.includes('exceeded') ||
+                                            errorMsg.includes('rate limit');
+                        
+                        // Check for model not found errors - always try next model
+                        const isModelNotFoundError = errorMsg.includes('not found') || 
+                                                    errorMsg.includes('not available') ||
+                                                    errorMsg.includes('invalid_model') ||
+                                                    errorMsg.includes('model_not_found');
+                        
+                        // If it's a quota error or model not found error, try next model (even if model is specified)
+                        if (isQuotaError || isModelNotFoundError) {
+                            if (isQuotaError) {
+                                console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
+                            } else {
+                                console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
+                            }
                             continue;
                         }
+                        
+                        // If model is specified and it's not a quota/model not found error, throw immediately
+                        if (modelName) {
+                            throw new Error(`モデル ${currentModelName} でエラー: ${errorMsg}`);
+                        }
+                        
+                        // For other errors, log and try next model
+                        console.log(`⚠️  モデル ${currentModelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                        continue;
                     }
                 }
                 
                 if (!modelSuccess) {
-                    throw new Error('すべてのOpenAIモデルの試行に失敗しました');
+                    throw new Error(modelName ? `指定されたモデル ${modelName} の試行に失敗しました` : 'すべてのOpenAIモデルの試行に失敗しました');
                 }
 
             } else if (activeProvider === 'gemini' && geminiClient) {
-                // Try different Gemini models in order of preference
+                // Use specified model or try different Gemini models in order of preference
                 // Note: Model names may vary by API version and region
-                const modelNames = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
+                const defaultModelNames = ["gemini-3-pro-preview", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
+                const modelNames = modelName ? [modelName] : defaultModelNames;
                 let lastError: any = null;
                 let modelSuccess = false;
                 
-                for (const modelName of modelNames) {
+                for (const currentModelName of modelNames) {
                     try {
                         const response = await geminiClient.models.generateContent({
-                            model: modelName,
+                            model: currentModelName,
                             contents: [
                                 "You are an expert Design AI Linter. Output JSON only. Do not use markdown code blocks.",
                                 prompt
@@ -155,41 +186,63 @@ export async function runAIRules(
                         }
                         jsonContent = JSON.parse(text);
                         modelSuccess = true;
-                        console.log(`✅ モデル ${modelName} を使用しました`);
+                        console.log(`✅ モデル ${currentModelName} を使用しました`);
                         break; // Success, exit loop
                     } catch (error: any) {
                         lastError = error;
                         // Handle different error formats
                         let errorMsg = '';
+                        let errorCode = '';
                         if (error?.error?.message) {
                             errorMsg = error.error.message;
+                            errorCode = error.error.code?.toString() || '';
                         } else if (error?.message) {
                             errorMsg = error.message;
+                            errorCode = error.code?.toString() || '';
                         } else if (typeof error === 'string') {
                             errorMsg = error;
                         } else {
                             errorMsg = JSON.stringify(error);
                         }
                         
-                        // If it's a 404 or model not found error, try next model
-                        if (errorMsg.includes('404') || 
-                            errorMsg.includes('not found') || 
-                            errorMsg.includes('not available') ||
-                            errorMsg.includes('not supported') ||
-                            errorMsg.includes('NOT_FOUND')) {
-                            console.log(`⚠️  モデル ${modelName} が利用できません。次のモデルを試します...`);
-                            continue;
-                        } else {
-                            // For other errors, log and try next model (don't throw immediately)
-                            console.log(`⚠️  モデル ${modelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                        // Check for quota/rate limit errors (429, 403, etc.) - always try next model
+                        const isQuotaError = errorCode === '429' || 
+                                            errorMsg.includes('429') ||
+                                            errorMsg.includes('quota') ||
+                                            errorMsg.includes('exceeded') ||
+                                            errorMsg.includes('rate limit');
+                        
+                        // Check for model not found errors - always try next model
+                        const isModelNotFoundError = errorMsg.includes('404') || 
+                                                    errorMsg.includes('not found') || 
+                                                    errorMsg.includes('not available') ||
+                                                    errorMsg.includes('not supported') ||
+                                                    errorMsg.includes('NOT_FOUND');
+                        
+                        // If it's a quota error or model not found error, try next model (even if model is specified)
+                        if (isQuotaError || isModelNotFoundError) {
+                            if (isQuotaError) {
+                                console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
+                            } else {
+                                console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
+                            }
                             continue;
                         }
+                        
+                        // If model is specified and it's not a quota/model not found error, throw immediately
+                        if (modelName) {
+                            throw new Error(`モデル ${currentModelName} でエラー: ${errorMsg}`);
+                        }
+                        
+                        // For other errors, log and try next model
+                        console.log(`⚠️  モデル ${currentModelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                        continue;
                     }
                 }
                 
                 // If all models failed, throw the last error
                 if (!modelSuccess && lastError) {
-                    throw lastError;
+                    throw new Error(modelName ? `指定されたモデル ${modelName} の試行に失敗しました: ${lastError.message}` : lastError.message);
                 }
             }
 
@@ -269,7 +322,8 @@ export async function runCustomPrompt(
     tokens: Token[],
     apiKey?: string,
     provider: AIProvider = 'openai',
-    outputJson: boolean = false
+    outputJson: boolean = false,
+    modelName?: string
 ): Promise<string> {
     // Determine provider and key
     let activeProvider = provider;
@@ -319,18 +373,19 @@ export async function runCustomPrompt(
     let responseContent: string = '';
 
     if (activeProvider === 'openai' && openaiClient) {
-        // Try different OpenAI models in order of preference
-        const modelNames = ["gpt-4o", "gpt-4-turbo", "gpt-4-turbo-preview", "gpt-3.5-turbo"];
+        // Use specified model or try different OpenAI models in order of preference
+        const defaultModelNames = ["gpt-4o", "gpt-4-turbo", "gpt-4-turbo-preview", "gpt-3.5-turbo"];
+        const modelNames = modelName ? [modelName] : defaultModelNames;
         let modelSuccess = false;
 
-        for (const modelName of modelNames) {
+        for (const currentModelName of modelNames) {
             try {
                 const systemMessage = outputJson
                     ? "You are an expert Design AI Linter. Output JSON only."
                     : "You are an expert Design AI Linter. Provide helpful and detailed responses.";
 
                 const response = await openaiClient!.chat.completions.create({
-                    model: modelName,
+                    model: currentModelName,
                     messages: [
                         { role: "system", content: systemMessage },
                         { role: "user", content: finalPrompt }
@@ -339,59 +394,88 @@ export async function runCustomPrompt(
                 });
                 const content = response.choices[0].message.content;
                 if (!content) {
-                    console.log(`⚠️  モデル ${modelName} が空のレスポンスを返しました。次のモデルを試します...`);
+                    if (modelName) {
+                        throw new Error(`モデル ${currentModelName} が空のレスポンスを返しました`);
+                    }
+                    console.log(`⚠️  モデル ${currentModelName} が空のレスポンスを返しました。次のモデルを試します...`);
                     continue;
                 }
                 responseContent = content;
                 modelSuccess = true;
-                console.log(`✅ OpenAIモデル ${modelName} を使用しました`);
+                console.log(`✅ OpenAIモデル ${currentModelName} を使用しました`);
                 break; // Success, exit loop
             } catch (error: any) {
                 // Handle different error formats
                 let errorMsg = '';
+                let errorCode = '';
                 if (error?.error?.message) {
                     errorMsg = error.error.message;
+                    errorCode = error.error.code?.toString() || '';
+                } else if (error?.status) {
+                    errorCode = error.status.toString();
+                    errorMsg = error.message || '';
                 } else if (error?.message) {
                     errorMsg = error.message;
+                    errorCode = error.code?.toString() || '';
                 } else if (typeof error === 'string') {
                     errorMsg = error;
                 } else {
                     errorMsg = JSON.stringify(error);
                 }
 
-                // If it's a model not found error, try next model
-                if (errorMsg.includes('not found') ||
-                    errorMsg.includes('not available') ||
-                    errorMsg.includes('invalid_model') ||
-                    errorMsg.includes('model_not_found')) {
-                    console.log(`⚠️  モデル ${modelName} が利用できません。次のモデルを試します...`);
-                    continue;
-                } else {
-                    // For other errors, log and try next model
-                    console.log(`⚠️  モデル ${modelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                // Check for quota/rate limit errors (429, 403, etc.) - always try next model
+                const isQuotaError = errorCode === '429' || 
+                                    errorMsg.includes('429') ||
+                                    errorMsg.includes('quota') ||
+                                    errorMsg.includes('exceeded') ||
+                                    errorMsg.includes('rate limit');
+                
+                // Check for model not found errors - always try next model
+                const isModelNotFoundError = errorMsg.includes('not found') ||
+                                            errorMsg.includes('not available') ||
+                                            errorMsg.includes('invalid_model') ||
+                                            errorMsg.includes('model_not_found');
+
+                // If it's a quota error or model not found error, try next model (even if model is specified)
+                if (isQuotaError || isModelNotFoundError) {
+                    if (isQuotaError) {
+                        console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
+                    } else {
+                        console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
+                    }
                     continue;
                 }
+
+                // If model is specified and it's not a quota/model not found error, throw immediately
+                if (modelName) {
+                    throw new Error(`モデル ${currentModelName} でエラー: ${errorMsg}`);
+                }
+
+                // For other errors, log and try next model
+                console.log(`⚠️  モデル ${currentModelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                continue;
             }
         }
 
         if (!modelSuccess) {
-            throw new Error('すべてのOpenAIモデルの試行に失敗しました');
+            throw new Error(modelName ? `指定されたモデル ${modelName} の試行に失敗しました` : 'すべてのOpenAIモデルの試行に失敗しました');
         }
 
     } else if (activeProvider === 'gemini' && geminiClient) {
-        // Try different Gemini models in order of preference
-        const modelNames = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
+        // Use specified model or try different Gemini models in order of preference
+        const defaultModelNames = ["gemini-3-pro-preview", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
+        const modelNames = modelName ? [modelName] : defaultModelNames;
         let lastError: any = null;
         let modelSuccess = false;
 
-        for (const modelName of modelNames) {
+        for (const currentModelName of modelNames) {
             try {
                 const systemMessage = outputJson
                     ? "You are an expert Design AI Linter. Output JSON only. Do not use markdown code blocks."
                     : "You are an expert Design AI Linter. Provide helpful and detailed responses.";
 
                 const response = await geminiClient!.models.generateContent({
-                    model: modelName,
+                    model: currentModelName,
                     contents: [
                         systemMessage,
                         finalPrompt
@@ -411,41 +495,63 @@ export async function runCustomPrompt(
                 }
                 responseContent = text;
                 modelSuccess = true;
-                console.log(`✅ モデル ${modelName} を使用しました`);
+                console.log(`✅ モデル ${currentModelName} を使用しました`);
                 break; // Success, exit loop
             } catch (error: any) {
                 lastError = error;
                 // Handle different error formats
                 let errorMsg = '';
+                let errorCode = '';
                 if (error?.error?.message) {
                     errorMsg = error.error.message;
+                    errorCode = error.error.code?.toString() || '';
                 } else if (error?.message) {
                     errorMsg = error.message;
+                    errorCode = error.code?.toString() || '';
                 } else if (typeof error === 'string') {
                     errorMsg = error;
                 } else {
                     errorMsg = JSON.stringify(error);
                 }
 
-                // If it's a 404 or model not found error, try next model
-                if (errorMsg.includes('404') ||
-                    errorMsg.includes('not found') ||
-                    errorMsg.includes('not available') ||
-                    errorMsg.includes('not supported') ||
-                    errorMsg.includes('NOT_FOUND')) {
-                    console.log(`⚠️  モデル ${modelName} が利用できません。次のモデルを試します...`);
-                    continue;
-                } else {
-                    // For other errors, log and try next model (don't throw immediately)
-                    console.log(`⚠️  モデル ${modelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                // Check for quota/rate limit errors (429, 403, etc.) - always try next model
+                const isQuotaError = errorCode === '429' || 
+                                    errorMsg.includes('429') ||
+                                    errorMsg.includes('quota') ||
+                                    errorMsg.includes('exceeded') ||
+                                    errorMsg.includes('rate limit');
+                
+                // Check for model not found errors - always try next model
+                const isModelNotFoundError = errorMsg.includes('404') ||
+                                            errorMsg.includes('not found') ||
+                                            errorMsg.includes('not available') ||
+                                            errorMsg.includes('not supported') ||
+                                            errorMsg.includes('NOT_FOUND');
+
+                // If it's a quota error or model not found error, try next model (even if model is specified)
+                if (isQuotaError || isModelNotFoundError) {
+                    if (isQuotaError) {
+                        console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
+                    } else {
+                        console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
+                    }
                     continue;
                 }
+
+                // If model is specified and it's not a quota/model not found error, throw immediately
+                if (modelName) {
+                    throw new Error(`モデル ${currentModelName} でエラー: ${errorMsg}`);
+                }
+
+                // For other errors, log and try next model
+                console.log(`⚠️  モデル ${currentModelName} でエラー: ${errorMsg.substring(0, 150)}`);
+                continue;
             }
         }
 
         // If all models failed, throw the last error
         if (!modelSuccess && lastError) {
-            throw lastError;
+            throw new Error(modelName ? `指定されたモデル ${modelName} の試行に失敗しました: ${lastError.message}` : lastError.message);
         }
     }
 

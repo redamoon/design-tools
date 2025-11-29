@@ -66,23 +66,57 @@ pnpm build
 pnpm start lint
 ```
 
+**デフォルト動作**: `lint`コマンドは、デフォルトでステージングされたファイルのみをチェックします。
+
 ### オプション
 
 ```bash
 # カスタム設定ファイルを指定
-pnpm start lint --config ./custom-config.json
+dslint lint --config ./custom-config.json
 
 # カスタムトークンファイルを指定
-pnpm start lint --source ./custom-tokens.json
+dslint lint --source ./custom-tokens.json
 
-# コードファイルを解析
-pnpm start lint --files "src/**/*.{tsx,css}"
+# コードファイルを解析（明示的に指定した場合）
+dslint lint --files "src/**/*.{tsx,css}"
+
+# ステージングされたファイルのみをチェック（デフォルト動作）
+dslint lint --staged
+
+# コミット範囲の差分のみをチェック
+dslint lint --commit-diff HEAD~1..HEAD
+dslint lint --commit-diff main..HEAD
+
+# AIモデルを指定
+dslint lint --model gpt-4o
+dslint lint --model gemini-3-pro-preview
 
 # JSONレポートを出力
-pnpm start lint --json ./report.json
+dslint lint --json ./report.json
 
 # PRコメント形式で出力
-pnpm start lint --pr-comment
+dslint lint --pr-comment
+```
+
+### fixコマンド
+
+`fix`コマンドは、デフォルトで全ファイルを横断的にチェックします：
+
+```bash
+# 全ファイルをチェック
+dslint fix
+
+# ステージングされたファイルのみをチェック
+dslint fix --staged
+
+# コミット範囲の差分のみをチェック
+dslint fix --commit-diff HEAD~1..HEAD
+
+# 特定のモデルを指定
+dslint fix --model gemini-2.5-flash
+
+# コードファイルパターンを指定
+dslint fix --files "src/**/*.{tsx,css}"
 ```
 
 ### カスタムプロンプトの実行
@@ -91,13 +125,16 @@ pnpm start lint --pr-comment
 
 ```bash
 # 基本的な使用方法
-pnpm start lint --prompt-file prompt.txt
+dslint lint --prompt-file prompt.txt
 
 # JSON形式で出力
-pnpm start lint --prompt-file prompt.txt --prompt-output-json
+dslint lint --prompt-file prompt.txt --prompt-output-json
 
 # カスタムトークンファイルを指定
-pnpm start lint --source ./custom-tokens.json --prompt-file prompt.txt
+dslint lint --source ./custom-tokens.json --prompt-file prompt.txt
+
+# 特定のモデルを指定
+dslint lint --prompt-file prompt.txt --model gpt-4o
 ```
 
 プロンプトファイル内で`{{TOKENS}}`プレースホルダーを使用すると、その位置にトークン情報が挿入されます。使用しない場合は、プロンプトの末尾に自動的に追加されます。
@@ -106,13 +143,67 @@ pnpm start lint --source ./custom-tokens.json --prompt-file prompt.txt
 
 ```bash
 # コマンドライン引数で指定
-pnpm start sync --key <file_key> --token <access_token> --output ./tokens.json
+dslint sync --key <file_key> --token <access_token> --output ./tokens.json
 
 # 環境変数で指定（.envファイルに設定）
 FIGMA_FILE_KEY=xxx
 FIGMA_ACCESS_TOKEN=xxx
-pnpm start sync --output ./tokens.json
+dslint sync --output ./tokens.json
 ```
+
+## Git差分のチェック
+
+### lintコマンドのデフォルト動作
+
+`lint`コマンドは、デフォルトでステージングされたファイルのみをチェックします。これにより、CI/CDパイプラインやpre-commitフックでの使用に適しています。
+
+### コミット範囲の指定
+
+特定のコミット範囲の差分のみをチェックできます：
+
+```bash
+# 直前のコミットとの差分
+dslint lint --commit-diff HEAD~1..HEAD
+
+# mainブランチとの差分
+dslint lint --commit-diff main..HEAD
+
+# 特定のコミット間の差分
+dslint lint --commit-diff abc123..def456
+```
+
+### fixコマンドでの全ファイルチェック
+
+`fix`コマンドは、デフォルトで全ファイルを横断的にチェックします。これにより、プロジェクト全体のリファクタリングや一括修正に適しています。
+
+## AIモデルの指定
+
+### 利用可能なモデル
+
+**OpenAI:**
+- `gpt-4o` (推奨)
+- `gpt-4-turbo`
+- `gpt-4-turbo-preview`
+- `gpt-3.5-turbo`
+
+**Gemini:**
+- `gemini-3-pro-preview` (推奨)
+- `gemini-2.5-flash`
+- `gemini-1.5-flash`
+- `gemini-pro`
+
+### モデルの指定方法
+
+```bash
+# 特定のモデルを指定
+dslint lint --model gpt-4o
+dslint fix --model gemini-3-pro-preview
+
+# モデルを指定しない場合、デフォルトの優先順位で自動的に試行されます
+dslint lint
+```
+
+モデルを指定した場合でも、クォータ超過（429）やモデルが見つからない（404）エラーが発生した場合は、自動的に次のモデルにフォールバックします。
 
 ## ルール
 
@@ -165,7 +256,7 @@ AIを使用してトークン名の意味的一貫性をチェックします。
 
 例：
 ```bash
-pnpm start lint --files "src/**/*.{tsx,css}" --source ./tokens.json
+dslint lint --files "src/**/*.{tsx,css}" --source ./tokens.json
 ```
 
 ## レポート
@@ -173,7 +264,8 @@ pnpm start lint --files "src/**/*.{tsx,css}" --source ./tokens.json
 ### JSONレポート
 
 ```bash
-pnpm start lint --json ./report.json
+dslint lint --json ./report.json
+dslint fix --json ./report.json
 ```
 
 出力されるJSONには、検出されたすべての問題の詳細情報が含まれます。
@@ -181,7 +273,8 @@ pnpm start lint --json ./report.json
 ### PRコメント形式
 
 ```bash
-pnpm start lint --pr-comment
+dslint lint --pr-comment
+dslint fix --pr-comment
 ```
 
 GitHubのPRコメントとして使用できる形式で出力されます。

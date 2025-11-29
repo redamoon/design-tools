@@ -55,12 +55,23 @@ if (fsSync.existsSync(rootEnvPath)) {
     dotenv.config();
 }
 
+// Load version from package.json
+const packageJsonPath = path.join(__dirname, '../../package.json');
+let version = '0.0.0';
+try {
+    const packageJson = JSON.parse(fsSync.readFileSync(packageJsonPath, 'utf-8'));
+    version = packageJson.version || '0.0.0';
+} catch (error) {
+    // Fallback to default version if package.json cannot be read
+    console.warn('⚠️  警告: package.jsonからバージョンを読み込めませんでした。');
+}
+
 const program = new Command();
 
 program
     .name('dslint')
     .description('Design AI Linter for Figma Tokens')
-    .version('0.1.0');
+    .version(version);
 
 program
     .command('lint')
@@ -74,6 +85,7 @@ program
     .option('--prompt-output-json', 'output prompt response as JSON')
     .option('--staged', 'only check staged files')
     .option('--commit-diff <range>', 'only check files changed in commit range (e.g., "HEAD~1..HEAD" or "main..HEAD")')
+    .option('--model <name>', 'specify AI model name (e.g., "gpt-4o", "gpt-3.5-turbo", "gemini-2.5-flash")')
     .action(async (opts) => {
         try {
             // Load config
@@ -119,7 +131,8 @@ program
                         tokens,
                         undefined,
                         provider,
-                        opts.promptOutputJson || false
+                        opts.promptOutputJson || false,
+                        opts.model
                     );
                     
                     if (opts.promptOutputJson) {
@@ -294,6 +307,7 @@ program
     .option('--commit-diff <range>', 'only check files changed in commit range (e.g., "HEAD~1..HEAD" or "main..HEAD")')
     .option('--json <path>', 'output JSON report to file')
     .option('--pr-comment', 'output PR comment format')
+    .option('--model <name>', 'specify AI model name (e.g., "gpt-4o", "gpt-3.5-turbo", "gemini-2.5-flash")')
     .action(async (opts) => {
         try {
             // Load config
@@ -384,7 +398,8 @@ program
                     ],
                     undefined,
                     'openai',
-                    codeFiles
+                    codeFiles,
+                    opts.model
                 );
                 diags.push(...aiDiags);
             } else if (!hasAIKey) {

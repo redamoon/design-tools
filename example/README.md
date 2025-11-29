@@ -34,7 +34,17 @@ pnpm dev
 ## Linterの実行
 
 ```bash
+# ステージングされたファイルのみをチェック（デフォルト）
 pnpm lint
+
+# 全ファイルをチェック
+dslint fix --files "src/**/*.{tsx,ts,css}"
+
+# 特定のAIモデルを指定
+dslint lint --model gemini-3-pro-preview --files "src/**/*.{tsx,ts,css}"
+
+# コミット範囲の差分をチェック
+dslint lint --commit-diff HEAD~1..HEAD --files "src/**/*.{tsx,ts,css}"
 ```
 
 このコマンドは、`src/`ディレクトリ内のコードファイルを解析し、raw color値やraw pixel値を検出して、適切なデザイントークンの使用を提案します。
@@ -46,10 +56,10 @@ pnpm lint
 ```bash
 # プロジェクトルートから実行
 cd ..
-pnpm start sync --key <FIGMA_FILE_KEY> --token <FIGMA_ACCESS_TOKEN> --output example/tokens.json
+dslint sync --key <FIGMA_FILE_KEY> --token <FIGMA_ACCESS_TOKEN> --output example/tokens.json
 
 # または環境変数が設定されている場合
-pnpm start sync --output example/tokens.json
+dslint sync --output example/tokens.json
 ```
 
 ## サンプルコンポーネント

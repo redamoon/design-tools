@@ -12,6 +12,9 @@ FigmaからエクスポートされたDesign Systemトークンをリントす�
 - トークン正規化と静的ルールチェック（命名規則、生の値検出など）
 - AIによる意味解析（一貫性チェック、スペーシング整合性、デザイン複雑さの評価）
 - コードファイル解析とトークン提案
+- Git差分のチェック（ステージングされたファイル、コミット範囲）
+- `fix`コマンドによる全ファイル横断チェック
+- AIモデルの指定（OpenAI/Gemini）
 - Figma APIからのトークン同期
 - カスタムプロンプトによる柔軟な分析
 - JSON/PRコメント形式のレポート出力
@@ -34,7 +37,16 @@ pnpm install
 # Design AI Linterの使用
 cd packages/design-ai-linter
 pnpm build
+
+# ステージングされたファイルをチェック（デフォルト）
 pnpm start lint
+
+# 全ファイルをチェック
+pnpm start fix
+
+# exampleディレクトリで実行
+cd example
+pnpm lint
 ```
 
 詳細なアーキテクチャとAI実装の詳細については、[WALKTHROUGH.md](./WALKTHROUGH.md)と[ARCHITECTURE.md](./ARCHITECTURE.md)を参照してください。
