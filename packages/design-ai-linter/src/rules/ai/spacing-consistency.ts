@@ -7,15 +7,15 @@ export const spacingConsistencyRule: AIRule = {
     severity: 'warn',
     schema: z.object({
         issues: z.array(z.object({
-            file: z.string().optional(),
+            file: z.string().nullable().optional(),
             line: z.number().nullable().optional(),
             problem: z.string(),
             reason: z.string(),
-            suggestedToken: z.string().optional(),
-            fixedCode: z.string().optional(),
-            impact: z.enum(['Low', 'Medium', 'High']).optional(),
-            tokenName: z.string().optional(),
-            suggestion: z.string().optional()
+            suggestedToken: z.string().nullable().optional(),
+            fixedCode: z.string().nullable().optional(),
+            impact: z.enum(['Low', 'Medium', 'High']).nullable().optional(),
+            tokenName: z.string().nullable().optional(),
+            suggestion: z.string().nullable().optional()
         }))
     }),
     prompt: (context) => {
@@ -32,7 +32,7 @@ Design Token と実装コードの整合性を確認し、必要に応じて改�
 - 命名の不一致をチェック（例: "sm"のようなTシャツサイズと数値"4"の混在）
 - グリッドに合わせるための修正を提案
 
-出力フォーマット:
+出力フォーマット（必ずオブジェクト形式で返してください）:
 {
   "issues": [
     {
@@ -48,6 +48,8 @@ Design Token と実装コードの整合性を確認し、必要に応じて改�
     }
   ]
 }
+
+重要: 必ずオブジェクト形式（{"issues": [...]}）で返してください。配列を直接返さないでください。
 
 Spacing Tokens:
 ${JSON.stringify(spacingTokens.map(t => ({ name: t.name, value: t.rawValue })), null, 2)}

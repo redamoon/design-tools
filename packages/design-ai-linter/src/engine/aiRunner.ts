@@ -69,10 +69,10 @@ export async function runAIRules(
     }
 
     for (const rule of rules) {
+        let jsonContent: any;
         try {
             console.log(`AIルールを実行中: ${rule.id}...`);
             const prompt = rule.prompt(context);
-            let jsonContent: any;
 
             if (activeProvider === 'openai' && openaiClient) {
                 // Try different OpenAI models in order of preference
@@ -193,8 +193,27 @@ export async function runAIRules(
                 }
             }
 
+            // Handle case where AI returns array instead of object
+            // Some models may return the issues array directly instead of wrapping it in an object
+            if (Array.isArray(jsonContent)) {
+                console.warn(`⚠️  AIが配列を返しました。オブジェクト形式に変換します。`);
+                jsonContent = { issues: jsonContent };
+            }
+
             // Validate with Zod schema
-            const result = rule.schema.parse(jsonContent);
+            let result;
+            try {
+                result = rule.schema.parse(jsonContent);
+            } catch (schemaError: any) {
+                // If schema validation fails, try to extract issues array if it exists
+                if (jsonContent && typeof jsonContent === 'object' && 'issues' in jsonContent && Array.isArray(jsonContent.issues)) {
+                    console.warn(`⚠️  スキーマバリデーションエラー: ${schemaError.message}`);
+                    console.warn(`   レスポンスのissues配列を使用します。`);
+                    result = { issues: jsonContent.issues };
+                } else {
+                    throw schemaError;
+                }
+            }
 
             if (result.issues) {
                 for (const issue of result.issues) {
@@ -217,6 +236,15 @@ export async function runAIRules(
             }
         } catch (error: any) {
             console.error(`❌ AIルール ${rule.id} の実行中にエラーが発生しました:`, error.message);
+            
+            // Zodスキーマエラーの詳細を表示
+            if (error.issues) {
+                console.error(`   スキーマバリデーションエラー詳細:`);
+                error.issues.forEach((issue: any, index: number) => {
+                    console.error(`     [${index + 1}] ${issue.path.join('.')}: ${issue.message}`);
+                });
+            }
+            
             // エラーの詳細を日本語で表示
             if (error.message?.includes('404')) {
                 console.error(`   モデルが見つかりません。利用可能なモデル名を確認してください。`);
@@ -226,6 +254,9 @@ export async function runAIRules(
                 console.error(`   レート制限に達しました。しばらく待ってから再試行してください。`);
             } else if (error.message?.includes('quota')) {
                 console.error(`   クォータを超過しました。APIの使用量を確認してください。`);
+            } else if (error.message?.includes('expected object')) {
+                console.error(`   AIが期待されるオブジェクト形式で応答していません。`);
+                console.error(`   レスポンス形式: ${Array.isArray(jsonContent) ? '配列' : typeof jsonContent}`);
             }
         }
     }

@@ -7,15 +7,15 @@ export const semanticNamingRule: AIRule = {
     severity: 'warn',
     schema: z.object({
         issues: z.array(z.object({
-            file: z.string().optional(),
+            file: z.string().nullable().optional(),
             line: z.number().nullable().optional(),
             problem: z.string(),
             reason: z.string(),
-            suggestedToken: z.string().optional(),
-            fixedCode: z.string().optional(),
-            impact: z.enum(['Low', 'Medium', 'High']).optional(),
-            tokenName: z.string().optional(),
-            suggestion: z.string().optional()
+            suggestedToken: z.string().nullable().optional(),
+            fixedCode: z.string().nullable().optional(),
+            impact: z.enum(['Low', 'Medium', 'High']).nullable().optional(),
+            tokenName: z.string().nullable().optional(),
+            suggestion: z.string().nullable().optional()
         }))
     }),
     prompt: (context) => `
@@ -30,7 +30,7 @@ Design Token と実装コードの整合性を確認し、必要に応じて改�
 - 数値と記述的値の混在を避ける
 - 命名の深さの不一致を避ける
 
-出力フォーマット:
+出力フォーマット（必ずオブジェクト形式で返してください）:
 {
   "issues": [
     {
@@ -46,6 +46,8 @@ Design Token と実装コードの整合性を確認し、必要に応じて改�
     }
   ]
 }
+
+重要: 必ずオブジェクト形式（{"issues": [...]}）で返してください。配列を直接返さないでください。
 
 Tokens:
 ${JSON.stringify(context.tokens.map(t => ({ name: t.name, value: t.rawValue })), null, 2)}

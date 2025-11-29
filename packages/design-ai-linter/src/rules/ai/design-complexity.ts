@@ -9,15 +9,15 @@ export const designComplexityRule: AIRule = {
         score: z.number().min(0).max(100),
         summary: z.string(),
         issues: z.array(z.object({
-            file: z.string().optional(),
+            file: z.string().nullable().optional(),
             line: z.number().nullable().optional(),
             problem: z.string(),
             reason: z.string(),
-            suggestedToken: z.string().optional(),
-            fixedCode: z.string().optional(),
-            impact: z.enum(['Low', 'Medium', 'High']).optional(),
-            tokenName: z.string().optional(),
-            suggestion: z.string().optional()
+            suggestedToken: z.string().nullable().optional(),
+            fixedCode: z.string().nullable().optional(),
+            impact: z.enum(['Low', 'Medium', 'High']).nullable().optional(),
+            tokenName: z.string().nullable().optional(),
+            suggestion: z.string().nullable().optional()
         })),
         proposals: z.array(z.string())
     }),
@@ -31,7 +31,7 @@ export const designComplexityRule: AIRule = {
 3. **スケールの複雑さ**: スケール（色、スペーシング、タイポグラフィ）が複雑すぎる、または不規則か？
 4. **認知的負荷**: 開発者が適切なトークンを選択するのがどれだけ難しいか？
 
-出力フォーマット:
+出力フォーマット（必ずオブジェクト形式で返してください）:
 {
   "score": number (0-100, 100は完璧なシンプルさ/明確さ),
   "summary": "システムの健全性に関する簡潔な要約",
@@ -50,6 +50,8 @@ export const designComplexityRule: AIRule = {
   ],
   "proposals": ["スペーシングスケールのリファクタリング", "color.infoをcolor.status.infoにリネーム"]
 }
+
+重要: 必ずオブジェクト形式で返してください。配列を直接返さないでください。
 
 Tokens:
 ${JSON.stringify(context.tokens.map(t => ({ name: t.name, value: t.rawValue })), null, 2)}
