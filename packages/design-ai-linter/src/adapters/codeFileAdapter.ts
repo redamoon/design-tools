@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { execSync } from 'child_process';
 import { CodeFile } from '../types';
 
 /**
@@ -185,5 +186,100 @@ export function extractRawPixels(content: string): Array<{ value: string; line: 
     });
     
     return pixels;
+}
+
+/**
+ * Get changed files from git diff
+ * @param baseDir - Base directory to run git commands from
+ * @param staged - If true, get staged files. If false, get unstaged files. If undefined, get both staged and unstaged.
+ * @param commitRange - Optional commit range (e.g., "HEAD~1..HEAD" or "main..HEAD")
+ * @returns Array of changed file paths relative to baseDir
+ */
+export function getGitChangedFiles(
+    baseDir: string = process.cwd(),
+    staged?: boolean,
+    commitRange?: string
+): string[] {
+    try {
+        let command: string;
+        
+        if (commitRange) {
+            // Get files changed in commit range
+            command = `git diff --name-only ${commitRange}`;
+        } else if (staged === true) {
+            // Get staged files
+            command = 'git diff --cached --name-only';
+        } else if (staged === false) {
+            // Get unstaged files
+            command = 'git diff --name-only';
+        } else {
+            // Get both staged and unstaged files
+            command = 'git diff --name-only HEAD';
+        }
+        
+        const output = execSync(command, {
+            cwd: baseDir,
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
+        
+        const files = output
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .filter(file => {
+                // Filter to only include code files that we can analyze
+                const ext = path.extname(file);
+                return ['.ts', '.tsx', '.js', '.jsx', '.css', '.scss', '.sass'].includes(ext);
+            });
+        
+        return files;
+    } catch (error: any) {
+        // If git command fails (e.g., not a git repo), return empty array
+        console.warn(`⚠️  Gitコマンドの実行に失敗しました: ${error.message}`);
+        return [];
+    }
+}
+
+/**
+ * Load code files from git diff
+ * @param baseDir - Base directory to run git commands from
+ * @param staged - If true, get staged files. If false, get unstaged files. If undefined, get both staged and unstaged.
+ * @param commitRange - Optional commit range (e.g., "HEAD~1..HEAD" or "main..HEAD")
+ * @returns Array of CodeFile objects for changed files
+ */
+export async function loadCodeFilesFromGitDiff(
+    baseDir: string = process.cwd(),
+    staged?: boolean,
+    commitRange?: string
+): Promise<CodeFile[]> {
+    const changedFiles = getGitChangedFiles(baseDir, staged, commitRange);
+    const codeFiles: CodeFile[] = [];
+    
+    for (const filePath of changedFiles) {
+        try {
+            const fullPath = path.resolve(baseDir, filePath);
+            const content = await fs.readFile(fullPath, 'utf-8');
+            const ext = path.extname(filePath);
+            
+            // Determine language
+            let language: CodeFile['language'] = 'typescript';
+            if (ext === '.css') language = 'css';
+            else if (ext === '.scss' || ext === '.sass') language = 'scss';
+            else if (ext === '.js' || ext === '.jsx') language = 'javascript';
+            else if (ext === '.ts' || ext === '.tsx') language = 'typescript';
+            
+            codeFiles.push({
+                path: filePath,
+                content,
+                language
+            });
+        } catch (error: any) {
+            // Skip files that can't be read (e.g., deleted files)
+            console.warn(`⚠️  ファイルを読み込めませんでした: ${filePath} - ${error.message}`);
+        }
+    }
+    
+    return codeFiles;
 }
 
