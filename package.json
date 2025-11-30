@@ -35,10 +35,7 @@
     "lint-staged": "^16.2.7"
   },
   "lint-staged": {
-    "packages/design-ai-linter/src/**/*.ts": [
-      "eslint --fix"
-    ],
-    "packages/design-ai-linter/test/**/*.ts": [
+    "**/*.ts": [
       "eslint --fix"
     ]
   }
