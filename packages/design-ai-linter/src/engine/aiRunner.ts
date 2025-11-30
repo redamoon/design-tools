@@ -65,8 +65,7 @@ export async function runAIRules(
 
     if (activeProvider === 'openai') {
         openaiClient = new OpenAI({ apiKey: finalApiKey });
-    } else {
-        geminiClient = new GoogleGenAI({ apiKey: finalApiKey });
+    } else {        geminiClient = new GoogleGenAI({ apiKey: finalApiKey });
     }
 
     for (const rule of rules) {

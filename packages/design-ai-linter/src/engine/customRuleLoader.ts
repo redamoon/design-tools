@@ -44,36 +44,101 @@ export async function loadCustomRules(
             // Load schema module dynamically
             let schema: z.ZodTypeAny;
             try {
-                // For TypeScript files, we need to use ts-node or tsx
-                // First, try to require the file directly (works for .js files)
+                let schemaModule: { schema?: z.ZodTypeAny; default?: z.ZodTypeAny } | undefined;
+                
                 if (schemaPath.endsWith('.ts')) {
-                    // Register ts-node if not already registered
-                    // eslint-disable-next-line @typescript-eslint/no-var-requires
-                    if (!require.extensions['.ts']) {
+                    // For TypeScript files, try multiple loading strategies
+                    let loaded = false;
+                    let lastError: Error | null = null;
+                    
+                    // Strategy 1: Try tsx if available (tsx supports bundler moduleResolution)
+                    try {
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        require('tsx/cjs/register');
+                        // Delete from cache to allow reloading
                         try {
                             // eslint-disable-next-line @typescript-eslint/no-var-requires
-                            require('ts-node/register');
-                        } catch (e) {
-                            // If ts-node is not available, try tsx
+                            delete require.cache[require.resolve(schemaPath)];
+                        } catch {
+                            // Cache entry might not exist yet
+                        }
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        schemaModule = require(schemaPath);
+                        loaded = true;
+                    } catch (tsxError) {
+                        lastError = tsxError instanceof Error ? tsxError : new Error(String(tsxError));
+                        // tsx is not available, try ts-node
+                    }
+                    
+                    // Strategy 2: Try ts-node if tsx failed
+                    if (!loaded) {
+                        try {
+                            // Register ts-node if not already registered
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
+                            if (!require.extensions['.ts']) {
+                                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                                const tsNode = require('ts-node');
+                                // Configure ts-node to support ES modules
+                                // skipProject: true to ignore project tsconfig.json (which may have incompatible settings)
+                                tsNode.register({
+                                    transpileOnly: true,
+                                    skipProject: true, // Ignore project tsconfig.json
+                                    compilerOptions: {
+                                        target: 'ES2020',
+                                        module: 'commonjs',
+                                        moduleResolution: 'node', // Use 'node' instead of 'bundler'
+                                        esModuleInterop: true,
+                                        allowSyntheticDefaultImports: true,
+                                        skipLibCheck: true,
+                                        strict: true
+                                    }
+                                });
+                            }
+                            // Delete from cache to allow reloading
                             try {
                                 // eslint-disable-next-line @typescript-eslint/no-var-requires
-                                require('tsx/cjs/register');
-                            } catch (e2) {
-                                throw new Error('TypeScriptファイルを実行するには、ts-nodeまたはtsxが必要です。npm install -D ts-node または npm install -D tsx を実行してください。');
+                                delete require.cache[require.resolve(schemaPath)];
+                            } catch {
+                                // Cache entry might not exist yet
                             }
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
+                            schemaModule = require(schemaPath);
+                            loaded = true;
+                        } catch (tsNodeError) {
+                            lastError = tsNodeError instanceof Error ? tsNodeError : new Error(String(tsNodeError));
+                            // ts-node also failed
                         }
                     }
+                    
+                    // Strategy 3: Try dynamic import as last resort
+                    if (!loaded) {
+                        try {
+                            const fileUrl = schemaPath.startsWith('/') 
+                                ? `file://${schemaPath}` 
+                                : `file://${path.resolve(schemaPath)}`;
+                            schemaModule = await import(fileUrl) as { schema?: z.ZodTypeAny; default?: z.ZodTypeAny };
+                            loaded = true;
+                        } catch (importError) {
+                            const importErrorMsg = importError instanceof Error ? importError.message : String(importError);
+                            const errorMsg = lastError 
+                                ? `TypeScriptファイルを読み込むことができませんでした。tsx/ts-nodeの読み込みに失敗: ${lastError.message}。動的インポートも失敗: ${importErrorMsg}` 
+                                : `TypeScriptファイルを読み込むには、tsxまたはts-nodeが必要です。プロジェクトルートまたはexampleディレクトリで 'pnpm add -D ts-node' または 'pnpm add -D tsx' を実行してください。`;
+                            throw new Error(errorMsg);
+                        }
+                    }
+                } else {
+                    // For JavaScript files, use dynamic import
+                    const fileUrl = schemaPath.startsWith('/') 
+                        ? `file://${schemaPath}` 
+                        : `file://${path.resolve(schemaPath)}`;
+                    schemaModule = await import(fileUrl) as { schema?: z.ZodTypeAny; default?: z.ZodTypeAny };
                 }
-
-                // Delete from require cache to allow reloading
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                delete require.cache[require.resolve(schemaPath)];
-
-                // Require the schema module
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const schemaModule = require(schemaPath) as { schema?: z.ZodTypeAny; default?: z.ZodTypeAny };
                 
                 // Extract schema export
+                if (!schemaModule) {
+                    throw new Error('スキーマモジュールの読み込みに失敗しました。');
+                }
+                
                 if (schemaModule.schema) {
                     schema = schemaModule.schema;
                 } else if (schemaModule.default) {

@@ -31,6 +31,10 @@
     "openai": "^6.9.1",
     "zod": "^4.1.12"
   },
+  "optionalDependencies": {
+    "ts-node": "^10.9.1",
+    "tsx": "^4.7.0"
+  },
   "devDependencies": {
     "@types/node": "^18.15.11",
     "@vitest/ui": "^1.0.0",
