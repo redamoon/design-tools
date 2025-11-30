@@ -48,12 +48,15 @@ export async function loadCustomRules(
                 // First, try to require the file directly (works for .js files)
                 if (schemaPath.endsWith('.ts')) {
                     // Register ts-node if not already registered
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
                     if (!require.extensions['.ts']) {
                         try {
+                            // eslint-disable-next-line @typescript-eslint/no-var-requires
                             require('ts-node/register');
                         } catch (e) {
                             // If ts-node is not available, try tsx
                             try {
+                                // eslint-disable-next-line @typescript-eslint/no-var-requires
                                 require('tsx/cjs/register');
                             } catch (e2) {
                                 throw new Error('TypeScriptファイルを実行するには、ts-nodeまたはtsxが必要です。npm install -D ts-node または npm install -D tsx を実行してください。');
@@ -63,10 +66,12 @@ export async function loadCustomRules(
                 }
 
                 // Delete from require cache to allow reloading
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
                 delete require.cache[require.resolve(schemaPath)];
 
                 // Require the schema module
-                const schemaModule = require(schemaPath);
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const schemaModule = require(schemaPath) as { schema?: z.ZodTypeAny; default?: z.ZodTypeAny };
                 
                 // Extract schema export
                 if (schemaModule.schema) {
@@ -81,8 +86,9 @@ export async function loadCustomRules(
                 if (!schema || typeof schema.parse !== 'function') {
                     throw new Error('スキーマはZodスキーマである必要があります。');
                 }
-            } catch (error: any) {
-                console.error(`❌ スキーマファイルの読み込みエラー (${config.id}):`, error.message);
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error(`❌ スキーマファイルの読み込みエラー (${config.id}):`, errorMessage);
                 continue;
             }
 
@@ -118,8 +124,9 @@ export async function loadCustomRules(
 
             rules.push(rule);
             console.log(`✅ カスタムルールを読み込みました: ${config.id}`);
-        } catch (error: any) {
-            console.error(`❌ カスタムルールの読み込みエラー (${config.id}):`, error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`❌ カスタムルールの読み込みエラー (${config.id}):`, errorMessage);
         }
     }
 
