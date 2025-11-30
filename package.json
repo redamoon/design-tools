@@ -16,7 +16,8 @@
     "dev": "pnpm --filter design-ai-linter dev",
     "lint": "eslint packages/design-ai-linter/src packages/design-ai-linter/test --ext .ts",
     "test": "pnpm --filter design-ai-linter test",
-    "test:run": "pnpm --filter design-ai-linter test:run"
+    "test:run": "pnpm --filter design-ai-linter test:run",
+    "prepare": "husky"
   },
   "keywords": [
     "design-system",
@@ -29,6 +30,16 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
-    "eslint": "^8.57.0"
+    "eslint": "^8.57.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  },
+  "lint-staged": {
+    "packages/design-ai-linter/src/**/*.ts": [
+      "eslint --fix"
+    ],
+    "packages/design-ai-linter/test/**/*.ts": [
+      "eslint --fix"
+    ]
   }
 }
