@@ -172,12 +172,12 @@ program
                 codeFiles = await loadCodeFilesFromGitDiff(process.cwd(), true);
                 console.log(`✅ ${codeFiles.length}個のステージングされたコードファイルが見つかりました。`);
             } else {
-                const filesPattern = opts.files || cfg.files;
-                if (filesPattern) {
+            const filesPattern = opts.files || cfg.files;
+            if (filesPattern) {
                     // filesオプションまたは設定ファイルで明示的に指定されている場合
-                    console.log(`📁 コードファイルを読み込み中: ${filesPattern}`);
-                    codeFiles = await loadCodeFiles(filesPattern, process.cwd());
-                    console.log(`✅ ${codeFiles.length}個のコードファイルが見つかりました。`);
+                console.log(`📁 コードファイルを読み込み中: ${filesPattern}`);
+                codeFiles = await loadCodeFiles(filesPattern, process.cwd());
+                console.log(`✅ ${codeFiles.length}個のコードファイルが見つかりました。`);
                 } else {
                     // デフォルト: ステージングされたファイルのみ
                     console.log(`📁 ステージングされたコードファイルを読み込み中（デフォルト）...`);
@@ -222,16 +222,33 @@ program
         const { spacingConsistencyRule } = await import('../rules/ai/spacing-consistency');
         const { designComplexityRule } = await import('../rules/ai/design-complexity');
 
+        // Load custom rules if configured
+        const allRules = [
+            semanticNamingRule, 
+            spacingConsistencyRule, 
+            designComplexityRule
+        ];
+
+        if (cfg.rules && Array.isArray(cfg.rules['custom-rules'])) {
+            try {
+                const { loadCustomRules } = await import('../engine/customRuleLoader');
+                const customRules = await loadCustomRules(cfg.rules['custom-rules'], process.cwd());
+                if (customRules.length > 0) {
+                    console.log(`✅ ${customRules.length}個のカスタムルールを読み込みました`);
+                    allRules.push(...customRules);
+                }
+            } catch (error: any) {
+                console.warn(`⚠️  カスタムルールの読み込み中にエラーが発生しました: ${error.message}`);
+            }
+        }
+
         const aiDiags = await runAIRules(
             candidateTokens, 
-            [
-                semanticNamingRule, 
-                spacingConsistencyRule, 
-                designComplexityRule
-            ],
+            allRules,
             undefined,
             'openai',
-            codeFiles
+            codeFiles,
+            opts.model
         );
         diags.push(...aiDiags);
       } else if (!hasAIKey) {
@@ -389,13 +406,29 @@ program
                 const { spacingConsistencyRule } = await import('../rules/ai/spacing-consistency');
                 const { designComplexityRule } = await import('../rules/ai/design-complexity');
 
+                // Load custom rules if configured
+                const allRules = [
+                    semanticNamingRule, 
+                    spacingConsistencyRule, 
+                    designComplexityRule
+                ];
+
+                if (cfg.rules && Array.isArray(cfg.rules['custom-rules'])) {
+                    try {
+                        const { loadCustomRules } = await import('../engine/customRuleLoader');
+                        const customRules = await loadCustomRules(cfg.rules['custom-rules'], process.cwd());
+                        if (customRules.length > 0) {
+                            console.log(`✅ ${customRules.length}個のカスタムルールを読み込みました`);
+                            allRules.push(...customRules);
+                        }
+                    } catch (error: any) {
+                        console.warn(`⚠️  カスタムルールの読み込み中にエラーが発生しました: ${error.message}`);
+                    }
+                }
+
                 const aiDiags = await runAIRules(
                     candidateTokens, 
-                    [
-                        semanticNamingRule, 
-                        spacingConsistencyRule, 
-                        designComplexityRule
-                    ],
+                    allRules,
                     undefined,
                     'openai',
                     codeFiles,

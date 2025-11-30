@@ -15,7 +15,16 @@
     "raw-pixel": {
       "severity": "warn",
       "enabled": true
-    }
+    },
+    "custom-rules": [
+      {
+        "id": "custom-color-accessibility",
+        "description": "Check color tokens for accessibility issues",
+        "severity": "warn",
+        "prompt": "./prompts/color-accessibility.txt",
+        "schema": "./schemas/color-accessibility.ts"
+      }
+    ]
   }
 }
 
