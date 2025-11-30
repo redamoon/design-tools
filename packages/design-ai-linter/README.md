@@ -246,6 +246,93 @@ AIを使用してトークン名の意味的一貫性をチェックします。
 
 デザインシステムの複雑さを評価します。トークンの数、階層の深さ、使用パターンを分析して、システムの複雑さに関する警告を提供します。
 
+## カスタムAIルール
+
+デフォルトのAIルールに加えて、独自のカスタムAIルールを定義できます。プロンプトファイルとZodスキーマファイルを作成し、設定ファイルで参照することで、プロジェクト固有のルールを追加できます。
+
+### カスタムルールの定義
+
+1. **プロンプトファイルを作成** (`prompts/my-rule.txt`):
+
+```
+あなたはデザインシステムアーキテクトです。
+以下のトークンを分析してください。
+
+{{TOKENS}}
+
+出力フォーマット:
+{
+  "issues": [
+    {
+      "problem": "string",
+      "reason": "string",
+      ...
+    }
+  ]
+}
+```
+
+2. **スキーマファイルを作成** (`schemas/my-rule.ts`):
+
+```typescript
+import { z } from 'zod';
+
+export const schema = z.object({
+  issues: z.array(z.object({
+    file: z.string().nullable().optional(),
+    line: z.number().nullable().optional(),
+    problem: z.string(),
+    reason: z.string(),
+    suggestedToken: z.string().nullable().optional(),
+    fixedCode: z.string().nullable().optional(),
+    impact: z.enum(['Low', 'Medium', 'High']).nullable().optional(),
+    tokenName: z.string().nullable().optional(),
+    suggestion: z.string().nullable().optional()
+  }))
+});
+```
+
+3. **設定ファイルに追加** (`designlintrc.json`):
+
+```json
+{
+  "rules": {
+    "custom-rules": [
+      {
+        "id": "my-custom-rule",
+        "description": "My custom rule description",
+        "severity": "warn",
+        "prompt": "./prompts/my-rule.txt",
+        "schema": "./schemas/my-rule.ts"
+      }
+    ]
+  }
+}
+```
+
+### プロンプトファイルのプレースホルダー
+
+- `{{TOKENS}}`: トークン情報が自動的に挿入されます。使用しない場合は、プロンプトの末尾に自動的に追加されます。
+- コードファイルが指定されている場合、コードファイルの情報も自動的に追加されます。
+
+### スキーマファイルの要件
+
+- TypeScriptファイル（`.ts`）またはJavaScriptファイル（`.js`）を使用できます
+- `export const schema`または`export default schema`でZodスキーマをエクスポートする必要があります
+- TypeScriptファイルを使用する場合、`ts-node`または`tsx`が必要です（プロジェクトにインストールされている必要があります）
+
+### 使用例
+
+```bash
+# カスタムルールを含む設定でlint実行
+dslint lint
+
+# fixコマンドでもカスタムルールが実行される
+dslint fix
+```
+
+詳細な例は`example/`ディレクトリを参照してください。
+
 ## コード解析
 
 `--files`オプションを使用してコードファイルを解析すると、以下の機能が有効になります：

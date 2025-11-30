@@ -131,15 +131,15 @@ export async function runAIRules(
                         
                         // Check for model not found errors - always try next model
                         const isModelNotFoundError = errorMsg.includes('not found') || 
-                                                    errorMsg.includes('not available') ||
-                                                    errorMsg.includes('invalid_model') ||
+                            errorMsg.includes('not available') ||
+                            errorMsg.includes('invalid_model') ||
                                                     errorMsg.includes('model_not_found');
                         
                         // If it's a quota error or model not found error, try next model (even if model is specified)
                         if (isQuotaError || isModelNotFoundError) {
                             if (isQuotaError) {
                                 console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
-                            } else {
+                        } else {
                                 console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
                             }
                             continue;
@@ -214,16 +214,16 @@ export async function runAIRules(
                         
                         // Check for model not found errors - always try next model
                         const isModelNotFoundError = errorMsg.includes('404') || 
-                                                    errorMsg.includes('not found') || 
-                                                    errorMsg.includes('not available') ||
-                                                    errorMsg.includes('not supported') ||
+                            errorMsg.includes('not found') || 
+                            errorMsg.includes('not available') ||
+                            errorMsg.includes('not supported') ||
                                                     errorMsg.includes('NOT_FOUND');
                         
                         // If it's a quota error or model not found error, try next model (even if model is specified)
                         if (isQuotaError || isModelNotFoundError) {
                             if (isQuotaError) {
                                 console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
-                            } else {
+                        } else {
                                 console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
                             }
                             continue;
@@ -432,15 +432,15 @@ export async function runCustomPrompt(
                 
                 // Check for model not found errors - always try next model
                 const isModelNotFoundError = errorMsg.includes('not found') ||
-                                            errorMsg.includes('not available') ||
-                                            errorMsg.includes('invalid_model') ||
+                    errorMsg.includes('not available') ||
+                    errorMsg.includes('invalid_model') ||
                                             errorMsg.includes('model_not_found');
 
                 // If it's a quota error or model not found error, try next model (even if model is specified)
                 if (isQuotaError || isModelNotFoundError) {
                     if (isQuotaError) {
                         console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
-                    } else {
+                } else {
                         console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
                     }
                     continue;
@@ -523,16 +523,16 @@ export async function runCustomPrompt(
                 
                 // Check for model not found errors - always try next model
                 const isModelNotFoundError = errorMsg.includes('404') ||
-                                            errorMsg.includes('not found') ||
-                                            errorMsg.includes('not available') ||
-                                            errorMsg.includes('not supported') ||
+                    errorMsg.includes('not found') ||
+                    errorMsg.includes('not available') ||
+                    errorMsg.includes('not supported') ||
                                             errorMsg.includes('NOT_FOUND');
 
                 // If it's a quota error or model not found error, try next model (even if model is specified)
                 if (isQuotaError || isModelNotFoundError) {
                     if (isQuotaError) {
                         console.log(`⚠️  モデル ${currentModelName} のクォータを超過しています。次のモデルを試します...`);
-                    } else {
+                } else {
                         console.log(`⚠️  モデル ${currentModelName} が利用できません。次のモデルを試します...`);
                     }
                     continue;
