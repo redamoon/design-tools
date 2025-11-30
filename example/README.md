@@ -70,3 +70,20 @@ dslint sync --output example/tokens.json
 
 これらのコンポーネントには、linterが検出するraw color値とraw pixel値が含まれています。
 
+## カスタムルールの例
+
+このプロジェクトには、カスタムAIルールの例が含まれています：
+
+- `prompts/color-accessibility.md`: カラーアクセシビリティをチェックするプロンプト
+- `schemas/color-accessibility.ts`: 対応するZodスキーマ
+
+`designlintrc.json`でカスタムルールが有効になっているため、lint実行時にカスタムルールも実行されます。
+
+### カスタムルールの作成方法
+
+1. `prompts/`ディレクトリにプロンプトファイル（`.md`）を作成
+2. `schemas/`ディレクトリにスキーマファイル（`.ts`）を作成
+3. `designlintrc.json`の`custom-rules`に追加
+
+詳細は[Design AI LinterのREADME](../packages/design-ai-linter/README.md)を参照してください。
+
