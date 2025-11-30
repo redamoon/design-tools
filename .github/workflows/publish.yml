@@ -65,7 +65,7 @@ jobs:
           "
 
       - name: Build design-ai-linter
-        run: pnpm --filter design-ai-linter build
+        run: pnpm --filter @design-tools/design-ai-linter build
 
       - name: Publish @design-tools/design-ai-linter to npm
         run: |
