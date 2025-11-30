@@ -125,16 +125,16 @@ dslint fix --files "src/**/*.{tsx,css}"
 
 ```bash
 # 基本的な使用方法
-dslint lint --prompt-file prompt.txt
+dslint lint --prompt-file prompt.md
 
 # JSON形式で出力
-dslint lint --prompt-file prompt.txt --prompt-output-json
+dslint lint --prompt-file prompt.md --prompt-output-json
 
 # カスタムトークンファイルを指定
-dslint lint --source ./custom-tokens.json --prompt-file prompt.txt
+dslint lint --source ./custom-tokens.json --prompt-file prompt.md
 
 # 特定のモデルを指定
-dslint lint --prompt-file prompt.txt --model gpt-4o
+dslint lint --prompt-file prompt.md --model gpt-4o
 ```
 
 プロンプトファイル内で`{{TOKENS}}`プレースホルダーを使用すると、その位置にトークン情報が挿入されます。使用しない場合は、プロンプトの末尾に自動的に追加されます。
@@ -252,9 +252,9 @@ AIを使用してトークン名の意味的一貫性をチェックします。
 
 ### カスタムルールの定義
 
-1. **プロンプトファイルを作成** (`prompts/my-rule.txt`):
+1. **プロンプトファイルを作成** (`prompts/my-rule.md`):
 
-```
+```md
 あなたはデザインシステムアーキテクトです。
 以下のトークンを分析してください。
 
@@ -302,7 +302,7 @@ export const schema = z.object({
         "id": "my-custom-rule",
         "description": "My custom rule description",
         "severity": "warn",
-        "prompt": "./prompts/my-rule.txt",
+        "prompt": "./prompts/my-rule.md",
         "schema": "./schemas/my-rule.ts"
       }
     ]

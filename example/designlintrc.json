@@ -21,7 +21,7 @@
         "id": "custom-color-accessibility",
         "description": "Check color tokens for accessibility issues",
         "severity": "warn",
-        "prompt": "./prompts/color-accessibility.txt",
+        "prompt": "./prompts/color-accessibility.md",
         "schema": "./schemas/color-accessibility.ts"
       }
     ]
