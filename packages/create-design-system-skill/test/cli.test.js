@@ -36,3 +36,30 @@ test('writes files and appends Agent Skills section', () => {
   const readme = fs.readFileSync(path.join(dir, 'README.md'), 'utf8');
   assert.match(readme, /## Agent Skills/);
 });
+
+test('force overwrites existing files', () => {
+  const dir = mkTmpDir();
+  const readmePath = path.join(dir, 'README.md');
+  const agentsPath = path.join(dir, 'AGENTS.md');
+  const skillPath = path.join(dir, 'skills/design-system/SKILL.md');
+
+  fs.mkdirSync(path.dirname(skillPath), { recursive: true });
+  fs.writeFileSync(readmePath, '# sentinel readme\n', 'utf8');
+  fs.writeFileSync(agentsPath, 'sentinel agents content\n', 'utf8');
+  fs.writeFileSync(skillPath, 'sentinel skill content\n', 'utf8');
+
+  execFileSync(process.execPath, [cliPath, '--target', dir, '--force'], { encoding: 'utf8' });
+
+  assert.equal(fs.existsSync(skillPath), true);
+  const generatedSkill = fs.readFileSync(skillPath, 'utf8');
+  assert.doesNotMatch(generatedSkill, /sentinel skill content/);
+  assert.match(generatedSkill, /# Design System Guardian Skill/);
+
+  const generatedAgents = fs.readFileSync(agentsPath, 'utf8');
+  assert.doesNotMatch(generatedAgents, /sentinel agents content/);
+  assert.match(generatedAgents, /# Agent Instructions/);
+
+  const readme = fs.readFileSync(readmePath, 'utf8');
+  assert.match(readme, /# sentinel readme/);
+  assert.match(readme, /## Agent Skills/);
+});
