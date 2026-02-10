@@ -1,0 +1,27 @@
+{
+  "name": "@design-tools/create-design-system-skill",
+  "version": "0.1.0",
+  "description": "Scaffold multi-agent design system skill templates into any repository",
+  "private": false,
+  "bin": {
+    "create-design-system-skill": "bin/create-design-system-skill.js"
+  },
+  "scripts": {
+    "start": "node bin/create-design-system-skill.js",
+    "test": "node --test test/*.test.js"
+  },
+  "files": [
+    "bin",
+    "templates",
+    "README.md"
+  ],
+  "keywords": [
+    "design-system",
+    "agent",
+    "cursor",
+    "claude",
+    "codex",
+    "scaffold"
+  ],
+  "license": "MIT"
+}

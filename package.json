@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "example",
-    "packages/design-ai-linter"
+    "packages/design-ai-linter",
+    "packages/create-design-system-skill"
   ],
   "bin": {
     "dslint": "packages/design-ai-linter/dist/cli/cli.js"
@@ -17,7 +18,8 @@
     "lint": "eslint packages/design-ai-linter/src packages/design-ai-linter/test --ext .ts",
     "test": "pnpm --filter design-ai-linter test",
     "test:run": "pnpm --filter design-ai-linter test:run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "skill:template": "pnpm --filter @design-tools/create-design-system-skill start"
   },
   "keywords": [
     "design-system",
