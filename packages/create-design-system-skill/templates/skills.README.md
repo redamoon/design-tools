@@ -14,10 +14,3 @@
 1. 仕様変更はまず `skills/design-system/SKILL.md` を更新。
 2. 各エージェント向けファイルは参照先と短い要約に留める。
 3. 破壊的変更を含む場合は version を更新し、変更理由を記載する。
-
-## 配布
-`@design-tools/create-design-system-skill` を使うと、他のリポジトリにも同じテンプレートを展開できます。
-
-```bash
-npx @design-tools/create-design-system-skill --dry-run
-```

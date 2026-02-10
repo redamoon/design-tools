@@ -21,6 +21,17 @@ FigmaからエクスポートされたDesign Systemトークンをリントす�
 
 詳細は[Design AI LinterのREADME](./packages/design-ai-linter/README.md)を参照してください。
 
+
+### [Create Design System Skill](./packages/create-design-system-skill/README.md)
+
+Cursor / Codex / Claude Code で共通利用できるデザインシステム skill テンプレートを生成するCLIです。
+
+**主な機能:**
+- `npx` でテンプレートを即時適用
+- `--dry-run` でファイル変更を事前確認
+- `--target` / `--force` で適用範囲を制御
+
+
 ## プロジェクト構造
 
 このプロジェクトはpnpm workspacesで管理されるmonorepoです:
