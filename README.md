@@ -50,3 +50,10 @@ pnpm lint
 ```
 
 詳細なアーキテクチャとAI実装の詳細については、[WALKTHROUGH.md](./WALKTHROUGH.md)と[ARCHITECTURE.md](./ARCHITECTURE.md)を参照してください。
+
+## Agent Skills
+
+Cursor / Codex / Claude Code で共通利用するデザインシステム向けスキルを `skills/` に追加しました。
+
+- 説明: `skills/README.md`
+- Canonical skill: `skills/design-system/SKILL.md`

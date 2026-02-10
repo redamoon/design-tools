@@ -1,0 +1,16 @@
+---
+description: Enforce design-system quality workflow and token-first implementation
+alwaysApply: false
+---
+
+# Design System Guardian (Cursor)
+
+When the user asks for design system related tasks (component creation/update, token refactor, UI consistency review), follow this policy:
+
+1. Do not hardcode visual values when design tokens exist.
+2. Keep naming semantic and API compatible with existing patterns.
+3. Validate accessibility (labeling, keyboard support, contrast assumptions).
+4. Update documentation when behavior or API changes.
+5. Report: Summary / Risks / Validation / Follow-ups.
+
+Reference canonical skill document: `skills/design-system/SKILL.md`.
